@@ -31,7 +31,17 @@ class Task:
             self.__scores = np.array([Fract(0, 1)] * (n + 1), Fract)
 
         def __str__(self):
-            res_str = f"Базис C     {'Cm    ' if (self.__n_art) else ''}A0    "
+            res_str = ""
+            res_str += (
+                "-" * 6 * (3 + self.__n + self.__n_art + (1 if (self.__n_art) else 0))
+                + "\n"
+            )
+
+            res_str += f"Базис C     {'Cm    ' if (self.__n_art) else ''}"
+            for i in range(self.__n + self.__n_art + 1):
+                res_str += f"A{i}    "
+            res_str += "\n"
+            res_str += " " * 6 * (3 + (1 if self.__n_art else 0))
             for i in range(self.__n + self.__n_art):
                 res_str += str(self.__C[i]) + " " * (6 - len(str(self.__C[i])))
             res_str += "\n"
@@ -42,12 +52,14 @@ class Task:
                         6 - len(str(self.__C_art[i]))
                     )
                 res_str += "\n"
+
             res_str += (
                 "-" * 6 * (3 + self.__n + self.__n_art + (1 if (self.__n_art) else 0))
                 + "\n"
             )
+
             for i in range(self.__m):
-                res_str += str(self.__basis[i]) + " " * (6 - len(str(self.__basis[i])))
+                res_str += str(self.__basis[i] + 1) + " " * (6 - len(str(self.__basis[i] + 1)))
                 res_str += str(self.__C[self.__basis[i]]) + " " * (
                     6 - len(str(self.__C[self.__basis[i]]))
                 )
@@ -60,24 +72,56 @@ class Task:
                         6 - len(str(self.__A[i][j]))
                     )
                 res_str += "\n"
+
+            res_str += (
+                "-" * 6 * (3 + self.__n + self.__n_art + (1 if (self.__n_art) else 0))
+                + "\n"
+            )
+
+            res_str += " " * 6 * (1 + (1 if self.__n_art else 0)) + "Δ     "
+            for i in range(self.__n + self.__n_art + 1):
+                res_str += str(self.__scores[i]) + " " * (
+                    6 - len(str(self.__scores[i]))
+                )
+            res_str += "\n"
+            if self.__n_art:
+                res_str += " " * 6 * (1 + (1 if self.__n_art else 0)) + "Δm    "
+                for i in range(self.__n + self.__n_art + 1):
+                    res_str += str(self.__scores_art[i]) + " " * (
+                        6 - len(str(self.__scores_art[i]))
+                    )
+                res_str += "\n"
+
             return res_str
 
         def row_mul(self, row, x):
             self.__A[row] *= x
 
         def calc_scores(self):
-            for column in range(self.__n):
-                self.__scores[column] = Fract(0)
+            for column in range(self.__n + self.__n_art + 1):
+                self.__scores[column] = (
+                    self.__C[column - 1] * (-1) if column else Fract(0)
+                )
                 for row in range(self.__m):
-                    self.__scores[column] += 0
+                    self.__scores[column] += (
+                        self.__C[self.__basis[row]] * self.__A[row][column]
+                    )
+
+            if self.__n_art:
+                self.__scores_art = np.array([Fract(0, 1)] * (self.__n + self.__n_art + 1), Fract)
+                for column in range(self.__n + self.__n_art + 1):
+                    self.__scores_art[column] = (
+                        self.__C_art[column - 1] * (-1) if column else Fract(0)
+                    )
+                    for row in range(self.__m):
+                        self.__scores_art[column] += (
+                            self.__C_art[self.__basis[row]] * self.__A[row][column]
+                        )
 
         def calc_basis(self):
             cond_col = (
                 np.count_nonzero(self.__A[:, 1 : self.__n + 1] == 1, axis=0) == 1
             ) & (np.count_nonzero(self.__A[:, 1 : self.__n + 1] == 0, axis=0) == 2)
-            for i in cond_col:
-                print(i, end=' ')
-            print()
             for column in range(self.__n):
                 if cond_col[column]:
                     for row in range(self.__m):
@@ -93,6 +137,7 @@ class Task:
                     self.__basis[row] = self.__n + self.__n_art - 1
                     self.__A = np.append(self.__A, [[Fract(0)]] * (self.__m), axis=1)
                     self.__A[row][self.__basis[row] + 1] = Fract(1)
+                    self.__scores = np.append(self.__scores, [Fract(0)])
 
                     self.__C = self.__C = np.append(self.__C, [Fract(0)] * self.__n_art)
                     self.__C_art = np.array(
