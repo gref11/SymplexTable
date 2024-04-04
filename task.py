@@ -59,7 +59,9 @@ class Task:
             )
 
             for i in range(self.__m):
-                res_str += str(self.__basis[i] + 1) + " " * (6 - len(str(self.__basis[i] + 1)))
+                res_str += str(self.__basis[i] + 1) + " " * (
+                    6 - len(str(self.__basis[i] + 1))
+                )
                 res_str += str(self.__C[self.__basis[i]]) + " " * (
                     6 - len(str(self.__C[self.__basis[i]]))
                 )
@@ -108,7 +110,9 @@ class Task:
                     )
 
             if self.__n_art:
-                self.__scores_art = np.array([Fract(0, 1)] * (self.__n + self.__n_art + 1), Fract)
+                self.__scores_art = np.array(
+                    [Fract(0, 1)] * (self.__n + self.__n_art + 1), Fract
+                )
                 for column in range(self.__n + self.__n_art + 1):
                     self.__scores_art[column] = (
                         self.__C_art[column - 1] * (-1) if column else Fract(0)
@@ -122,6 +126,7 @@ class Task:
             cond_col = (
                 np.count_nonzero(self.__A[:, 1 : self.__n + 1] == 1, axis=0) == 1
             ) & (np.count_nonzero(self.__A[:, 1 : self.__n + 1] == 0, axis=0) == 2)
+            self.__basis = np.array([-1] * self.__m, int)
             for column in range(self.__n):
                 if cond_col[column]:
                     for row in range(self.__m):
@@ -148,10 +153,67 @@ class Task:
                     for i in range(self.__n, self.__n + self.__n_art):
                         self.__C_art[i] = Fract(-1)
 
+        def make_basis(self, row, column):
+            if self.__n_art:
+                self.__A = np.delete(self.__A, list(range(self.__n + 1, self.__n + self.__n_art + 1)), axis=1)
+                self.__C = np.delete(self.__C, list(range(self.__n, self.__n + self.__n_art)))
+                self.__n_art = 0
+            self.row_mul(row, Fract(1) / self.__A[row][column])
+            self.__basis[row] = column - 1
+            for i in range(self.__m):
+                if i != row:
+                    self.__A[i] -= self.__A[row] * self.__A[i][column]
+
+        def choose_basis(self):
+            if self.__n_art:
+                min_score_column = 1
+                for column in range(2, self.__n + self.__n_art + 1):
+                    if self.__scores_art[min_score_column] > self.__scores_art[column]:
+                        min_score_column = column
+            else:
+                min_score_column = 1
+                for column in range(2, self.__n + 1):
+                    if self.__scores[min_score_column] > self.__scores[column]:
+                        min_score_column = column
+
+            min_ratio_row = -1
+            for row in range(0, self.__m):
+                if self.__A[row][min_score_column] < 0:
+                    continue
+                if min_ratio_row == -1:
+                    min_ratio_row = row
+                    continue
+                ratio = self.__A[row][0] / self.__A[row][min_score_column]
+                if (
+                    self.__A[min_ratio_row][0]
+                    / self.__A[min_ratio_row][min_score_column]
+                    > ratio
+                ):
+                    min_ratio_row = row
+            if min_ratio_row == -1:
+                print("Your task is really shit") 
+            return min_ratio_row, min_score_column
+        
+        def check_for_optimality(self):
+            if self.__n_art:
+                return False
+            for i in range(1, self.__n + 1):
+                if self.__scores[i] < 0:
+                    return False
+            return True
+
     def to_canonical(self):
         for row in range(self.__m):
             if self.symplextable._SymplexTable__A[row][0] < 0:
                 self.symplextable.row_mul(row, -1)
 
     def solve(self):
-        pass
+        self.symplextable.calc_basis()
+        self.symplextable.calc_scores()
+        while not(self.symplextable.check_for_optimality()):
+            print(self.symplextable)
+            row, column = self.symplextable.choose_basis()
+            self.symplextable.make_basis(row, column)
+            self.symplextable.calc_basis()
+            self.symplextable.calc_scores()
+        print(self.symplextable)
