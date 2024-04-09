@@ -19,10 +19,10 @@ class Fract:
 
     def __init__(self, num, den=1):
         if type(num) != int or int(num) != num:
-            print(f"Incorrect numerator value: {num}")
+            # print(f"Incorrect numerator value: {num}")
             return
         if type(den) != int or den < 1 or int(den) != den:
-            print(f"Incorrect denomerator value: {den}")
+            # print(f"Incorrect denomerator value: {den}")
             return
         if num == 0:
             self.__num = 0
