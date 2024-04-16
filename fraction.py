@@ -12,7 +12,6 @@ def nod(a, b):
 
 
 class Fract:
-    # __slots__ = ('__num', '__den')
     __type = "Fract"
     __num = 1
     __den = 1
@@ -112,7 +111,13 @@ class Fract:
             return True
         else:
             return False
-    
+
+    def __le__(fract1, fract2):
+        if fract1 == fract2 or fract1 < fract2:
+            return True
+        else:
+            return False
+
     def __gt__(fract1, fract2):
         if type(fract2) == int:
             fract2 = Fract(fract2, 1)
@@ -120,37 +125,17 @@ class Fract:
             return True
         else:
             return False
-    
-    def __eq__(fract1, fract2):
-        if type(fract2) == int:
-            fract2 = Fract(fract2, 1)
-        if (fract1.__num == fract2.__num and fract1.__den == fract2.__den):
+
+    def __ge__(fract1, fract2):
+        if fract1 == fract2 or fract1 < fract2:
             return True
         else:
             return False
 
-
-if __name__ == "__main__":
-    # fr1 = Fract(1, 2)
-    # fr2 = Fract(-1, 2)
-    # fr3 = Fract(6, 12)
-    # fr4 = Fract(0, 2)
-    # print(fr1, fr2, fr3, fr4)
-    # print(fr1 + fr4)
-    # print(Fract(2, 3) * Fract(3, 4))
-    # print(Fract(1, 3) + Fract(1, 6))
-    # print(Fract(1, 3) - Fract(1, 6))
-    # print(Fract(1, 3) / Fract(1, 6))
-    fr = Fract(1, 2)
-    print(fr)
-    fr += Fract(-1, 6)
-    print(fr)
-    fr -= Fract(-1, 6)
-    print(fr)
-    fr *= Fract(-1, 6)
-    print(fr)
-    fr /= Fract(-1, 6)
-    print(fr)
-    print(Fract(2, 7) / 2)
-    print(Fract(1) == Fract(1))
-    print(Fract(1) == Fract(2))
+    def __eq__(fract1, fract2):
+        if type(fract2) == int:
+            fract2 = Fract(fract2, 1)
+        if fract1.__num == fract2.__num and fract1.__den == fract2.__den:
+            return True
+        else:
+            return False

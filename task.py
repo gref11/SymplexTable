@@ -164,8 +164,9 @@ class Task:
                     )
                 res_str += "\n"
             if self.parameter:
+                print(self.n, self.n_art)
                 res_str += " " * col_len * 2 + 'Δ"     '
-                for i in range(self.n + self.n_art + 1):
+                for i in range(self.n + 1):
                     res_str += str(self.scores_l[i]) + " " * (
                         col_len - len(str(self.scores_l[i]))
                     )
@@ -221,6 +222,85 @@ class Task:
         def basis(self):
             return self.__basis
 
+        def get_table_line(self, *s):
+            res_str = "<tr>"
+            for i in s:
+                if i == "skip":
+                    continue
+                res_str += f"<th><div>{i}</div></th>"
+            res_str += "</tr>\n"
+            return res_str
+
+        def get_table(self):
+            res_str = "<br><table><thead>"
+            amp1 = "'"
+            amp2 = '"'
+            res_str += self.get_table_line(
+                *[
+                    "Базис",
+                    f"C{amp1 if (self.parameter) else ''}",
+                    f"C{amp2}" if (self.parameter) else "skip",
+                    *[f"A{i}" for i in range(self.n + self.n_art + 1)],
+                ]
+            )
+            res_str += self.get_table_line(
+                *([" "] * (3 + (1 if (self.parameter) else 0))),
+                *(map(lambda x: str(x), self.C[: self.n])),
+                *(["-M"] * self.n_art),
+            )
+
+            if self.parameter:
+                res_str += self.get_table_line(
+                    *([" "] * 4),
+                    *(map(lambda x: str(x), self.C_l[: self.n])),
+                )
+            res_str += "</thead>"
+
+            for i in range(self.m):
+                res_str += self.get_table_line(
+                    str(self.basis[i] + 1),
+                    (
+                        str(self.C[self.basis[i]])
+                        if (not (self.n_art) or not (self.C_art[self.basis[i]] != 0))
+                        else "-M"
+                    ),
+                    str(self.C_l[self.basis[i]]) if (self.parameter) else "skip",
+                    *[
+                        (
+                            f'"{str(self.A[i, j])}"'
+                            if (i == self.choosen_row and j == self.choosen_col)
+                            else str(self.A[i][j])
+                        )
+                        for j in range(self.n + self.n_art + 1)
+                    ],
+                )
+
+            res_str += "<tfoot>"
+            res_str += self.get_table_line(
+                *([" "] * (1 + (1 if (self.parameter) else 0))),
+                f"Δ{amp1 if (self.parameter) else ''}",
+                *(map(lambda x: str(x), self.scores[: self.n + self.n_art + 1])),
+            )
+            if self.n_art:
+                res_str += self.get_table_line(
+                    *([" "] * 1),
+                    "Δm",
+                    *(
+                        map(
+                            lambda x: str(x), self.scores_art[: self.n + self.n_art + 1]
+                        )
+                    ),
+                )
+            if self.parameter:
+                res_str += self.get_table_line(
+                    *([" "] * (1 + (1 if (self.parameter) else 0))),
+                    f"Δ{amp2}",
+                    *(map(lambda x: str(x), self.scores_l[: self.n + 1])),
+                )
+
+            res_str += "</tfoot></table><br>"
+            return res_str
+
         def row_mul(self, row, x):
             self.__A[row] *= x
 
@@ -263,7 +343,7 @@ class Task:
         def calc_basis(self):
             cond_col = (
                 np.count_nonzero(self.A[:, 1 : self.n + 1] == 1, axis=0) == 1
-            ) & (np.count_nonzero(self.A[:, 1 : self.n + 1] == 0, axis=0) == 2)
+            ) & (np.count_nonzero(self.A[:, 1 : self.n + 1] == 0, axis=0) == self.m - 1)
             self.__basis = np.array([-1] * self.m, int)
             for column in range(self.n):
                 if cond_col[column]:
@@ -313,7 +393,7 @@ class Task:
         def choose_basis_row(self, column):
             min_ratio_row = -1
             for row in range(0, self.__m):
-                if self.A[row][column] < 0:
+                if self.A[row][column] <= 0:
                     continue
                 if min_ratio_row == -1:
                     min_ratio_row = row
@@ -338,6 +418,7 @@ class Task:
             min_ratio_row = self.choose_basis_row(min_score_column)
             if min_ratio_row == -1:
                 print("Your task is really shit")
+                return -1, -1
             return min_ratio_row, min_score_column
 
         def check_for_optimality(self):
@@ -360,13 +441,21 @@ class Task:
                 self.symplextable.row_mul(row, -1)
 
     def solve(self, par=0):
+        res_str = ""
         self.symplextable.calc_basis()
         self.symplextable.calc_scores()
         while not (self.symplextable.check_for_optimality()):
             self.symplextable.choosen_row, self.symplextable.choosen_col = (
                 self.symplextable.choose_basis()
             )
+            res_str += self.symplextable.get_table()
             print(self.symplextable)
+            if (
+                self.symplextable.choosen_row == -1
+                and self.symplextable.choosen_col == -1
+            ):
+                res_str += "Решения не существует"
+                return res_str
             self.symplextable.make_basis(
                 self.symplextable.choosen_row, self.symplextable.choosen_col
             )
@@ -376,25 +465,40 @@ class Task:
         print(self.symplextable)
         print(f"L* = {str(self.symplextable.scores[0])}")
         print(f'X* = ({", ".join(list(map(str, self.symplextable.get_x())))})')
+        res_str += self.symplextable.get_table()
+        res_str += f"L* = {str(self.symplextable.scores[0])}<br>"
+        res_str += (
+            f'X* = ({", ".join(list(map(str, self.symplextable.get_x())))})<br>'
+            + "<br>"
+        )
         if self.__has_parameter:
             self.symplextable.par = 0
             self.symplextable.parameter = True
             self.__answer = self.parameter_analys()
+            res_str += self.__answer[0]
             print("Ответ:")
-            print(self.__answer)
+            print(self.__answer[1])
+            res_str += "Ответ:"
+            res_str += self.__answer[1]
+        # print(res_str)
+        return res_str
 
     def parameter_analys_caller(self, row, column, direction):
         current_basis = self.symplextable.basis[row]
         self.symplextable.make_basis(row, column)
         self.symplextable.calc_basis()
         res = self.parameter_analys(direction)
-        self.symplextable.make_basis(row, current_basis)
+        self.symplextable.make_basis(row, current_basis + 1)
         self.symplextable.calc_basis()
         return res
 
     def parameter_analys(self, direction="either"):
+        res_str = ""
+        res_ans = ""
+
         self.symplextable.calc_scores()
         print(self.symplextable)
+        res_str += str(self.symplextable.get_table())
         left_l = -9999
         left_l_col = -1
         right_l = 9999
@@ -414,23 +518,6 @@ class Task:
                     right_l = l
                     right_l_col = column
 
-        res_str = ""
-
-        if direction == "either" or direction == "right":
-            if right_l != 9999:
-                min_ratio_row = self.symplextable.choose_basis_row(right_l_col)
-                if min_ratio_row == -1:
-                    res_str += (f"[{right_l}" + "; +∞): решений нет") + "\n"
-                    print(res_str)
-
-                else:
-                    res_str += (
-                        self.parameter_analys_caller(
-                            min_ratio_row, right_l_col, "right"
-                        )
-                        + "\n"
-                    )
-
         str_ = (
             (f"[{left_l}" if (left_l != -9999) else "(-∞")
             + "; "
@@ -443,19 +530,39 @@ class Task:
             + f'X* = ({", ".join(list(map(str, self.symplextable.get_x())))})'
         ) + "\n"
 
-        res_str += str_
         print(str_)
+        res_str += str_ + "<br><br>"
+
+        if direction == "either" or direction == "right":
+            if right_l != 9999:
+                min_ratio_row = self.symplextable.choose_basis_row(right_l_col)
+                if min_ratio_row == -1:
+                    res_ans += (f"[{right_l}" + "; +∞): решений нет") + "\n" + "<br>"
+                    res_str += str_ + "<br><br>"
+                    print(res_ans)
+
+                else:
+                    callback = self.parameter_analys_caller(
+                        min_ratio_row, right_l_col, "right"
+                    )
+                    res_str += callback[0]
+                    res_ans += callback[1]
+
+        res_ans += str_ + "<br>"
 
         if direction == "either" or direction == "left":
             if left_l != -9999:
                 min_ratio_row = self.symplextable.choose_basis_row(left_l_col)
                 if min_ratio_row == -1:
-                    str_ += "(-∞; " + f"{left_l}]: решений нет"
-                    res_str += str_
+                    str_ = "(-∞; " + f"{left_l}]: решений нет"
+                    res_str += str_ + "<br><br>"
+                    res_ans += str_ + "<br>"
                     print(str_)
                 else:
-                    res_str += self.parameter_analys_caller(
+                    callback = self.parameter_analys_caller(
                         min_ratio_row, left_l_col, "left"
                     )
+                    res_str += callback[0]
+                    res_ans += callback[1] + "\n"
 
-        return res_str
+        return [res_str, res_ans]

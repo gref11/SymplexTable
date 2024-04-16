@@ -1,36 +1,14 @@
 from fraction import Fract
 from task import Task
 import numpy as np
-
-# Пример
-# c = [1, 5, -2, 5, -1]
-# n = 5
-# m = 3
-# a = [[8, 3, -5, 1, -1, 0], [-20, -1, 0, -1, -1, -1], [12, 1, -2, 1, 1, -1]]
-# c_l = []
-
-# c = [3, 2, -1, -1, -2]
-# n = 5
-# m = 3
-# a = [[40, -1, 0, 1, 8, 0], [3, 1, 0, 0, -5, 1], [8, 1, 1, 0, 0, 0]]
-# c_l = []
-
-# 7.13 - correct
-
-# c = [-2, 2, 0, 0, 2]
-# c_l = [4, 2, 4, -1, 4]
-# n = 5
-# m = 3
-# a = [[7, 5, -1, -1, 1, -2], [-21, -2, -1, 0, -1, -2], [11, 3, -1, 1, 0, 1]]
-
-# 7.14 - correct
-
-c = [5, -2, 4, 1, 3]
-c_l = [2, -4, 0, -4, -4]
-n = 5
-m = 3
-a = [[22, -7, 1, 7, -1, 1], [-43, -1, 0, -4, -1, -1], [-28, 0, 1, -4, 0, 1]]
+import eel
 
 
-task = Task(n, m, c, a, c_l)
-task.solve()
+@eel.expose
+def solve(n, m, c, a, c_l=[]):
+    task = Task(n, m, c, a, c_l)
+    return task.solve()
+
+
+eel.init("web", allowed_extensions=[".js", ".html"])
+eel.start("index.html")
